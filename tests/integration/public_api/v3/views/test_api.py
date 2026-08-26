@@ -442,7 +442,7 @@ class TestPublicAPIV3:
         """
         # Given
         client = RequestsClient()
-        target_url = self.api_base_path
+        target_url = self.api_base_path + "/"
 
         # When
         response: Response = client.get(target_url)
