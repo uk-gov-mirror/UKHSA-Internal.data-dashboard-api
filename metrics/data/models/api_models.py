@@ -114,11 +114,14 @@ class APIHeadline(models.Model):
     sex = models.CharField(max_length=SEX_MAX_CHAR_CONSTRAINT, null=True)
     age = models.CharField(max_length=CHAR_COLUMN_MAX_CONSTRAINT, null=True)
 
-    period_start = models.DateTimeField(null=True)
-    period_end = models.DateTimeField(null=True)
-    refresh_date = models.DateTimeField(null=True)
+    period_start = models.DateTimeField()
+    period_end = models.DateTimeField()
+    refresh_date = models.DateTimeField()
     embargo = models.DateTimeField(null=True)
-    metric_value = models.FloatField()
+    metric_value = models.DecimalField(
+        max_digits=METRIC_VALUE_MAX_DIGITS,
+        decimal_places=METRIC_VALUE_DECIMAL_PLACES,
+    )
     upper_confidence = models.DecimalField(
         max_digits=METRIC_VALUE_MAX_DIGITS,
         decimal_places=METRIC_VALUE_DECIMAL_PLACES,
