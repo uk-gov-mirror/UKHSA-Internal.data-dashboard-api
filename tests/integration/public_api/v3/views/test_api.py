@@ -340,98 +340,134 @@ class TestPublicAPIV3:
                 assert result["sex"] == sex
                 assert result["age"] == age
 
-    # @pytest.mark.django_db
-    # def test_returns_correct_data_at_final_view_with_query_parameters(self):
-    #     """
-    #     Given a set of `APITimeSeries` records
-    #     And a list of parameters to filter for a subset of those records
-    #     And a number of query parameters
-    #     When the final public API endpoint is hit
-    #     Then the response contains the correct filtered `APITimeSeries` records
-    #     """
-    #     # Given
-    #     client = RequestsClient()
+    @pytest.mark.django_db
+    def test_returns_correct_data_at_final_view_with_query_parameters(self):
+        """
+        Given a set of `APITimeSeries` records
+        And a list of parameters to filter for a subset of those records
+        And a number of query parameters
+        When the final public API endpoint is hit
+        Then the response contains the correct filtered `APITimeSeries` records
+        """
+        # Given
+        client = RequestsClient()
 
-    #     theme = "infectious_disease"
-    #     sub_theme = "respiratory"
-    #     topic = "COVID-19"
-    #     geography_type = "Nation"
-    #     geography = "England"
-    #     metric = "COVID-19_deaths_ONSByDay"
-    #     age = "15_44"
-    #     sex = "F"
+        theme = "infectious_disease"
+        sub_theme = "respiratory"
+        topic = "COVID-19"
+        geography_type = "Nation"
+        geography = "England"
+        geography_code = "E92000001"
+        metric = "COVID-19_deaths_ONSByDay"
+        metric_group = "deaths"
+        age = "15_44"
+        sex = "F"
 
-    #     other_age = "90+"
-    #     other_sex = "M"
+        other_age = "90+"
+        other_sex = "M"
 
-    #     expected_matching_time_series_count: int = 2
+        other_topic = "Influenza"
+        other_metric = "Influenza_testing_7daypositivity"
 
-    #     # Records to be filtered for
-    #     for i in range(expected_matching_time_series_count):
-    #         self._setup_api_time_series(
-    #             theme=theme,
-    #             sub_theme=sub_theme,
-    #             topic=topic,
-    #             geography_type=geography_type,
-    #             geography=geography,
-    #             metric=metric,
-    #             day=i + 1,
-    #             age=age,
-    #             sex=sex,
-    #         )
+        expected_matching_count: int = 2
 
-    #     # Records to be filtered out
-    #     for i in range(10):
-    #         self._setup_api_time_series(
-    #             theme=theme,
-    #             sub_theme=sub_theme,
-    #             topic=topic,
-    #             geography_type=geography_type,
-    #             geography=geography,
-    #             metric=metric,
-    #             age=other_age,
-    #             sex=other_sex,
-    #             day=i + 1,
-    #         )
+        # Records to be filtered for
+        for i in range(expected_matching_count):
+            self._setup_api_time_series(
+                theme=theme,
+                sub_theme=sub_theme,
+                topic=topic,
+                geography_type=geography_type,
+                geography_code=geography_code,
+                geography=geography,
+                metric_group=metric_group,
+                metric=metric,
+                day=i + 1,
+                age=age,
+                sex=sex,
+            )
 
-    #     # When
-    #     target_url = (
-    #         f"{self.target_domain}"
-    #         f"{self.path}"
-    #         f"{type}/themes/{theme}/"
-    #         f"sub_themes/{sub_theme}/"
-    #         f"topics/{topic}/"
-    #         f"geography_types/{geography_type}/"
-    #         f"geographies/{geography}/"
-    #         f"metrics/{metric}"
-    #     )
-    #     response: Response = client.get(target_url, params={"sex": sex, "age": age})
+            self._setup_api_headline(
+                theme=theme,
+                sub_theme=sub_theme,
+                topic=topic,
+                geography_type=geography_type,
+                geography=geography,
+                geography_code=geography_code,
+                metric_group=metric_group,
+                metric=metric,
+                sex=sex,
+                age=age,
+                day=i + 1,
+            )
 
-    #     # Then
-    #     # Check that the filtering has been applied correctly
-    #     # And that only the requested time series records are returned
-    #     response_data: list[dict] = response.json()
-    #     assert response_data["count"] == expected_matching_time_series_count
+        # Records to be filtered out
+        for i in range(10):
+            self._setup_api_time_series(
+                theme=theme,
+                sub_theme=sub_theme,
+                topic=topic,
+                geography_type=geography_type,
+                geography=geography,
+                metric=metric,
+                age=other_age,
+                sex=other_sex,
+                day=i + 1,
+            )
 
-    #     # Check that API returns no paginated links
-    #     # as we expect a small enough set of data to fit within the 1-page response
-    #     assert response_data["next"] is None
-    #     assert response_data["previous"] is None
+            self._setup_api_headline(
+                theme=theme,
+                sub_theme=sub_theme,
+                topic=other_topic,
+                geography_type=geography_type,
+                geography=geography,
+                geography_code=geography_code,
+                metric_group=metric_group,
+                metric=other_metric,
+                sex=other_sex,
+                age=other_age,
+                day=i + 1,
+            )
 
-    #     # Check that the results contain the records within the 1-page response
-    #     assert len(response_data["results"]) == expected_matching_time_series_count
+        for data_type in ["timeseries", "headline"]:
+            # When
+            target_url = (
+                f"{self.target_domain}"
+                f"{self.path}/{data_type}/themes/"
+                f"{theme}/sub_themes/"
+                f"{sub_theme}/topics/"
+                f"{topic}/geography_types/"
+                f"{geography_type}/geographies/"
+                f"{geography}/metrics/"
+                f"{metric}"
+            )
+            response: Response = client.get(target_url, params={"sex": sex, "age": age})
 
-    #     # Check that the results match the expected records
-    #     # which were to be filtered for
-    #     for result in response_data["results"]:
-    #         assert result["theme"] == theme
-    #         assert result["sub_theme"] == sub_theme
-    #         assert result["geography_type"] == geography_type
-    #         assert result["geography"] == geography
-    #         assert result["topic"] == topic
-    #         assert result["metric"] == metric
-    #         assert result["sex"] == sex != other_sex
-    #         assert result["age"] == age != other_age
+            # Then
+            # Check that the filtering has been applied correctly
+            # And that only the requested time series records are returned
+            response_data: list[dict] = response.json()
+            assert response_data["count"] == expected_matching_count
+
+            # Check that API returns no paginated links
+            # as we expect a small enough set of data to fit within the 1-page response
+            assert response_data["next"] is None
+            assert response_data["previous"] is None
+
+            # Check that the results contain the records within the 1-page response
+            assert len(response_data["results"]) == expected_matching_count
+
+            # Check that the results match the expected records
+            # which were to be filtered for
+            for result in response_data["results"]:
+                assert result["theme"] == theme
+                assert result["sub_theme"] == sub_theme
+                assert result["geography_type"] == geography_type
+                assert result["geography"] == geography
+                assert result["topic"] == topic
+                assert result["metric"] == metric
+                assert result["sex"] == sex != other_sex
+                assert result["age"] == age != other_age
 
     @pytest.mark.django_db
     def test_root_view(self):
